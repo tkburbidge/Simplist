@@ -5,17 +5,20 @@
         <md-icon>menu</md-icon>
       </md-button>
       <h2 class="md-title list-name" style="flex: 1">{{list.name}}</h2>
-      <md-menu>
+      <md-menu ref="listMenu" v-if="list.name">
         <md-button class="md-icon-button" md-menu-trigger>
           <md-icon>more_horiz</md-icon>
         </md-button>
 
         <md-menu-content>
+          <md-menu-item @click="toggleCompleted">
+            {{ showCompleted ? 'Hide completed' : 'Show completed' }}
+          </md-menu-item>
           <md-menu-item @click="openRenameListDialog">
             Rename List
           </md-menu-item>
-          <md-menu-item @click="toggleCompleted">
-            {{ showCompleted ? 'Hide completed' : 'Show completed' }}
+          <md-menu-item @click="openDeleteListDialog" class="md-warn">
+            Delete List
           </md-menu-item>
         </md-menu-content>
 
@@ -26,6 +29,14 @@
           @close="onCloseRenameDialog"
           ref="renameDialog">
         </md-dialog-prompt>
+        <md-dialog-confirm
+          md-title="Delete List"
+          md-content-html="Are you sure you want to delete this list? This cannot be undone."
+          md-ok-text="Delete"
+          md-cancel-text="Nevermind"
+          @close="onCloseDeleteDialog"
+          ref="deleteDialog">
+        </md-dialog-confirm>
       </md-menu>
     </md-toolbar>
     <div class="scroll-view" style="flex: 1" ref="scrollView">
@@ -60,7 +71,7 @@
         </md-layout>
       </div>
     </div>
-    <md-whiteframe id="NewItemInputContainer" md-elevation="2">
+    <md-whiteframe id="NewItemInputContainer" md-elevation="2" v-if="list.name">
       <input placeholder="New item..." class="item-input" type="text" v-model="newItem" @keypress.enter="addItem" @blur="addItem" ref="newItemInput"/>
     </md-whiteframe>
   </md-layout>
@@ -122,6 +133,7 @@ export default {
       this.prompt.newListName = this.list.name
       var self = this
       setTimeout(function () {
+        // Need this setTimeout so that the input inside the dialog retains focus. Otherwise, the closing menu steals it.
         self.$refs.renameDialog.open()
       }, 500)
     },
@@ -130,6 +142,15 @@ export default {
         this.$firebaseRefs.list.set({
           name: this.prompt.newListName
         })
+      }
+    },
+    openDeleteListDialog () {
+      this.$refs.deleteDialog.open()
+    },
+    onCloseDeleteDialog (actionClicked) {
+      if (actionClicked === 'ok') {
+        this.$firebaseRefs.list.remove()
+        fire.database().ref('/listItems/' + this.listId).remove()
       }
     },
     // deleteSelectedItems () {
