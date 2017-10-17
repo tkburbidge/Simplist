@@ -14,13 +14,13 @@ Vue.material.registerTheme({
   default: {
     primary: 'blue',
     accent: 'pink',
-    warn: 'deep-orange',
+    warn: 'red',
     background: 'white'
   },
   white: {
     primary: 'white',
     accent: 'pink',
-    warn: 'deep-orange',
+    warn: 'red',
     background: 'grey',
     textColor: 'blue'
   }

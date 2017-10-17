@@ -51,7 +51,7 @@
                         <md-checkbox v-model="item.completedDate" @change="markItem(item, true)"></md-checkbox>
                       </md-table-cell>
                       <md-table-cell class="input-cell">
-                        <input :value="item.text" v-model="item.text" class="item-input" type="text" @keypress.enter="updateItem(item)" @blur="updateItem(item)"/>
+                        <input v-model="item.text" class="item-input" type="text" @keypress.enter="updateItem(item)" @blur="updateItem(item)"/>
                       </md-table-cell>
                     </md-table-row>
                     <template v-if="showCompleted">
@@ -60,7 +60,7 @@
                           <md-checkbox v-model="item.completedDate" @change="markItem(item, false)"></md-checkbox>
                         </md-table-cell>
                         <md-table-cell class="input-cell">
-                          <input :value="item.text" v-model="item.text" class="item-input" type="text" @keypress.enter="updateItem(item)" @blur="updateItem(item)"/>
+                          <input v-model="item.text" class="item-input" type="text" readonly/>
                         </md-table-cell>
                       </md-table-row>
                     </template>
@@ -74,11 +74,15 @@
     <md-whiteframe id="NewItemInputContainer" md-elevation="2" v-if="list.name">
       <input placeholder="New item..." class="item-input" type="text" v-model="newItem" @keypress.enter="addItem" @blur="addItem" ref="newItemInput"/>
     </md-whiteframe>
+    <md-snackbar ref="snackbar">
+      <span>List deleted.</span>
+    </md-snackbar>
   </md-layout>
 </template>
 
 <script>
 import fire from '@/data/fire'
+import router from '@/router/index'
 
 export default {
   name: 'ListDetail',
@@ -151,39 +155,18 @@ export default {
       if (actionClicked === 'ok') {
         this.$firebaseRefs.list.remove()
         fire.database().ref('/listItems/' + this.listId).remove()
+        this.$refs.snackbar.open()
+        router.push('/Lists')
       }
     },
-    // deleteSelectedItems () {
-    //   var updates = {}
-    //   for (var i in this.selectedItems) {
-    //     var key = this.selectedItems[i]['.key']
-    //     updates[key] = null
-    //   }
-    //   this.$firebaseRefs.items.update(updates)
-    // },
-    // completeSelectedItems () {
-    //   var updates = {}
-    //   for (var i in this.selectedItems) {
-    //     updates[this.selectedItems[i]['.key'] + '/completed'] = !this.selectedItems[i].completed
-    //   }
-    //   this.$firebaseRefs.items.update(updates)
-    // },
     markItem (item, completed) {
       var updates = {}
       var completedDate = completed ? new Date() : null
       updates[item['.key'] + '/completedDate'] = completedDate
       this.$firebaseRefs.items.update(updates)
-      // this.temporaryCompleted.push(item)
     },
-    // itemsSelected (items) {
-    //   this.selectedItems = items
-    //   this.completeSelectedItems()
-    // },
     toggleCompleted () {
       this.showCompleted = !this.showCompleted
-      // if (this.showCompleted) {
-      //   this.temporaryCompleted = []
-      // }
     },
     toggleSidenav () {
       this.$emit('toggle-sidenav')
