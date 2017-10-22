@@ -1,8 +1,8 @@
 <template>
   <div>
     <md-list>
-      <md-list-item v-for="list in lists" :key="list['.key']">
-        <router-link :to="{ path: '/Lists/' + list['.key'] }">
+      <md-list-item v-for="list in lists" :key="list.id">
+        <router-link :to="{ path: '/Lists/' + list.id }">
           {{list.name}}
         </router-link>
       </md-list-item>
@@ -13,8 +13,8 @@
     </md-button>
     
     <md-dialog-prompt
-      :md-title="prompt.title"
-      :md-input-placeholder="prompt.placeholder"
+      md-title="Create List"
+      md-input-placeholder="List name..."
       v-model="prompt.value"
       @close="onCloseAddDialog"
       ref="addDialog">
@@ -28,30 +28,44 @@ import router from '@/router/index'
 
 export default {
   name: 'ListsIndex',
-  data: () => {
+  data () {
+    fire.firestore().collection('lists').orderBy('order').onSnapshot((querySnapshot) => {
+      this.lists = querySnapshot.docs.map(d => {
+        var thing = {...d.data()}
+        thing.id = d.id
+        return thing
+      })
+    })
+
     return {
+      lists: [],
       prompt: {
-        title: 'Create List',
-        placeholder: 'List name...',
         value: ''
       }
     }
   },
-  firebase: {
-    lists: fire.database().ref('/lists')
+  computed: {
+    nextOrder () {
+      if (this.lists.length > 0) {
+        return (this.lists[this.lists.length - 1].order || 0) + 1
+      }
+
+      return 1
+    }
   },
   methods: {
     openAddDialog () {
+      this.prompt.value = ''
       this.$refs.addDialog.open()
     },
     onCloseAddDialog (actionClicked) {
       if (actionClicked === 'ok') {
-        var newListId = this.$firebaseRefs.lists.push({
-          name: this.prompt.value
-        }).key
-
-        // this.prompt.value = '' this is not workings
-        router.push('/Lists/' + newListId)
+        fire.firestore().collection('lists').add({
+          name: this.prompt.value,
+          order: this.nextOrder
+        }).then((docRef) => {
+          router.push('/Lists/' + docRef.id)
+        })
       }
     }
   }

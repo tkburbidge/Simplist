@@ -16,12 +16,12 @@ export default new Router({
     },
     {
       path: '/',
+      beforeEnter: requireAuth,
       component: SidebarLayout,
       children: [
         {
           path: '/Lists',
           name: 'ListsIndex',
-          beforeEnter: requireAuth,
           components: {
             default: ListsIndex
           }
@@ -29,7 +29,6 @@ export default new Router({
         {
           path: '/Lists/:id',
           name: 'ListDetail',
-          beforeEnter: requireAuth,
           components: {
             default: ListsIndex,
             detail: ListDetail

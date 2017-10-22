@@ -46,7 +46,7 @@
               <md-table-card>
                 <md-table>
                   <md-table-body>
-                    <md-table-row v-for="item in items" :key="item['.key']">
+                    <md-table-row v-for="item in items" :key="item.id">
                       <md-table-cell class="checkbox-cell">
                         <md-checkbox v-model="item.completedDate" @change="markItem(item, true)"></md-checkbox>
                       </md-table-cell>
@@ -55,7 +55,7 @@
                       </md-table-cell>
                     </md-table-row>
                     <template v-if="showCompleted">
-                      <md-table-row v-for="item in orderedCompletedItems" :key="item['.key']" class="completed">
+                      <md-table-row v-for="item in completedItems" :key="item.id" class="completed">
                         <md-table-cell class="checkbox-cell">
                           <md-checkbox v-model="item.completedDate" @change="markItem(item, false)"></md-checkbox>
                         </md-table-cell>
@@ -82,20 +82,21 @@
 
 <script>
 import fire from '@/data/fire'
+import firebase from 'firebase'
 import router from '@/router/index'
 
 export default {
   name: 'ListDetail',
   data () {
     this.listId = this.$route.params.id
-    this.$bindAsObject('list', fire.database().ref('/lists/' + this.$route.params.id))
-    this.$bindAsArray('items', fire.database().ref('/listItems/' + this.listId).orderByChild('completedDate').endAt(false))
-    this.$bindAsArray('completedItems', fire.database().ref('/listItems/' + this.listId).orderByChild('completedDate').startAt(1))
+    this.fetchInitialData()
 
     return {
       newItem: '',
+      list: {},
+      items: [],
+      completedItems: [],
       listId: this.$route.params.id,
-      // temporaryCompleted: [],
       showCompleted: false,
       prompt: {
         newListName: ''
@@ -103,47 +104,84 @@ export default {
     }
   },
   computed: {
-    orderedCompletedItems: function () {
-      return this.completedItems.sort((a, b) => { return new Date(b.completedDate) - new Date(a.completedDate) })
+    nextOrder () {
+      if (this.items.length > 0) {
+        return (this.items[this.items.length - 1].order || 0) + 1
+      }
+
+      return 1
+    }
+  },
+  watch: {
+    showCompleted (newValue) {
+      if (newValue === true) {
+        this.fetchCompletedItems()
+      }
     }
   },
   beforeRouteUpdate (to, from, next) {
     this.listId = to.params.id
-    this.$bindAsArray('items', fire.database().ref('/listItems/' + this.listId).orderByChild('completedDate').endAt(false))
-    this.$bindAsArray('completedItems', fire.database().ref('/listItems/' + this.listId).orderByChild('completedDate').startAt(1))
-    this.$bindAsObject('list', fire.database().ref('/lists/' + this.listId))
+    this.fetchInitialData()
     this.showCompleted = false
-    // this.temporaryCompleted = []
     next()
   },
   methods: {
+    fetchInitialData () {
+      this.listDoc = fire.firestore().collection('lists').doc(this.listId)
+      this.listItemsCollection = fire.firestore().collection('lists').doc(this.listId).collection('items')
+      this.itemsQuery = this.listItemsCollection.where('completedDate', '==', null).orderBy('order')
+      this.completedItemsQuery = this.listItemsCollection.where('completedDate', '>', new Date('2010-01-01')).orderBy('completedDate', 'desc')
+      this.listDoc.onSnapshot((querySnapshot) => {
+        this.list = querySnapshot.data()
+      })
+
+      this.itemsQuery.onSnapshot((snap) => {
+        this.items = snap.docs.map(d => {
+          var temp = {...d.data()}
+          temp.id = d.id
+          return temp
+        })
+      })
+    },
+    fetchCompletedItems () {
+      this.completedItemsQuery.onSnapshot((snap) => {
+        this.completedItems = snap.docs.map(d => {
+          var temp = {...d.data()}
+          temp.id = d.id
+          return temp
+        })
+      })
+    },
     addItem () {
       if (this.newItem) {
-        this.$firebaseRefs.items.push({
-          text: this.newItem
+        this.listItemsCollection.add({
+          text: this.newItem,
+          completedDate: null,
+          createdDate: firebase.firestore.FieldValue.serverTimestamp(),
+          order: this.nextOrder
         })
         this.newItem = ''
 
-        var self = this
-        setTimeout(function () {
-          self.$refs.scrollView.scrollTo(0, self.$refs.scrollView.scrollHeight)
+        setTimeout(() => {
+          this.$refs.scrollView.scrollTo(0, this.$refs.scrollView.scrollHeight)
         }, 0)
       }
     },
     updateItem (item) {
-      this.$firebaseRefs.items.child(item['.key']).child('text').set(item.text)
+      this.listItemsCollection.doc(item.id).update({
+        text: item.text
+      })
     },
     openRenameListDialog () {
       this.prompt.newListName = this.list.name
-      var self = this
-      setTimeout(function () {
+      setTimeout(() => {
         // Need this setTimeout so that the input inside the dialog retains focus. Otherwise, the closing menu steals it.
-        self.$refs.renameDialog.open()
+        this.$refs.renameDialog.open()
       }, 500)
     },
     onCloseRenameDialog (actionClicked) {
       if (actionClicked === 'ok') {
-        this.$firebaseRefs.list.set({
+        this.listDoc.set({
           name: this.prompt.newListName
         })
       }
@@ -153,17 +191,17 @@ export default {
     },
     onCloseDeleteDialog (actionClicked) {
       if (actionClicked === 'ok') {
-        this.$firebaseRefs.list.remove()
-        fire.database().ref('/listItems/' + this.listId).remove()
+        this.listItemsCollection.get().then((snapshot) => snapshot.docs.forEach((doc) => doc.delete()))
+        this.listDoc.delete()
         this.$refs.snackbar.open()
         router.push('/Lists')
       }
     },
     markItem (item, completed) {
-      var updates = {}
-      var completedDate = completed ? new Date() : null
-      updates[item['.key'] + '/completedDate'] = completedDate
-      this.$firebaseRefs.items.update(updates)
+      var completedDate = completed ? firebase.firestore.FieldValue.serverTimestamp() : null
+      this.listItemsCollection.doc(item.id).update({
+        completedDate: completedDate
+      })
     },
     toggleCompleted () {
       this.showCompleted = !this.showCompleted

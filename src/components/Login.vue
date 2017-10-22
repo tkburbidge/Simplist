@@ -67,6 +67,27 @@ export default {
       signInError: ''
     }
   },
+  created () {
+    firebase.auth().onAuthStateChanged((user) => {
+      if (user) {
+        router.push('/Lists')
+        // alert('user signed in')
+        // User is signed in.
+
+        // var displayName = user.displayName;
+        // var email = user.email;
+        // var emailVerified = user.emailVerified;
+        // var photoURL = user.photoURL;
+        // var isAnonymous = user.isAnonymous;
+        // var uid = user.uid;
+        // var providerData = user.providerData;
+        // ...
+      } else {
+        // User is signed out.
+        // ...
+      }
+    })
+  },
   methods: {
     signIn () {
       firebase.auth().signInWithEmailAndPassword(this.email, this.password).catch((error) => {
@@ -91,26 +112,6 @@ export default {
     }
   }
 }
-
-firebase.auth().onAuthStateChanged((user) => {
-  if (user) {
-    router.push('/Lists')
-    // alert('user signed in')
-    // User is signed in.
-
-    // var displayName = user.displayName;
-    // var email = user.email;
-    // var emailVerified = user.emailVerified;
-    // var photoURL = user.photoURL;
-    // var isAnonymous = user.isAnonymous;
-    // var uid = user.uid;
-    // var providerData = user.providerData;
-    // ...
-  } else {
-    // User is signed out.
-    // ...
-  }
-})
 
 </script>
 

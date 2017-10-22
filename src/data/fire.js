@@ -1,4 +1,6 @@
 import firebase from 'firebase'
+import 'firebase/firestore'
+
 // Initialize Firebase
 var config = {
   apiKey: 'AIzaSyCbaSHJDjIEKF0C4q4OvtGUWh7pioeXax0',
@@ -8,5 +10,6 @@ var config = {
   storageBucket: 'tkb-reminders.appspot.com',
   messagingSenderId: '817223359217'
 }
+
 var fire = firebase.initializeApp(config)
 export default fire
