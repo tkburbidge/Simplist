@@ -7,6 +7,7 @@ import router from './router'
 import VueFire from 'vuefire'
 import VueMaterial from 'vue-material'
 import 'vue-material/dist/vue-material.css'
+import FullLoading from '@/components/FullLoading'
 
 Vue.config.productionTip = false
 Vue.use(VueFire)
@@ -25,6 +26,13 @@ Vue.material.registerTheme({
     background: 'grey',
     textColor: 'blue'
   }
+})
+
+/* eslint-disable no-new */
+new Vue({
+  el: '#loading',
+  template: '<FullLoading/>',
+  components: { FullLoading }
 })
 
 fire.auth().onAuthStateChanged((user) => {

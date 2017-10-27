@@ -12,4 +12,5 @@ var config = {
 }
 
 var fire = firebase.initializeApp(config)
+firebase.firestore().enablePersistence()
 export default fire

@@ -16,6 +16,7 @@ export default new Router({
     },
     {
       path: '/',
+      redirect: { name: 'ListsIndex' },
       beforeEnter: requireAuth,
       component: SidebarLayout,
       children: [
