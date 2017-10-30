@@ -181,7 +181,7 @@ export default {
     },
     onCloseRenameDialog (actionClicked) {
       if (actionClicked === 'ok') {
-        this.listDoc.set({
+        this.listDoc.update({
           name: this.prompt.newListName
         })
       }

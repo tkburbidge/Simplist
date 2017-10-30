@@ -1,0 +1,10 @@
+service cloud.firestore {
+  match /databases/{database}/documents {
+  	match /{allChildren=**} {
+  		allow read, write;
+    }
+    // match /lists/{listId} {
+    //   allow read, write; // if exists(/users/$(request.auth.uid)/lists/$(listId));
+    // }
+  }
+}
