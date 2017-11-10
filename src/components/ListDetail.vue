@@ -81,9 +81,8 @@
 </template>
 
 <script>
-import fire from '@/data/fire'
-import firebase from 'firebase'
 import router from '@/router/index'
+import listService from '@/data/listService'
 
 export default {
   name: 'ListDetail',
@@ -127,37 +126,23 @@ export default {
   },
   methods: {
     fetchInitialData () {
-      this.listDoc = fire.firestore().collection('lists').doc(this.listId)
-      this.listItemsCollection = fire.firestore().collection('lists').doc(this.listId).collection('items')
-      this.itemsQuery = this.listItemsCollection.where('completedDate', '==', null).orderBy('order')
-      this.completedItemsQuery = this.listItemsCollection.where('completedDate', '>', new Date('2010-01-01')).orderBy('completedDate', 'desc')
-      this.listDoc.onSnapshot((querySnapshot) => {
-        this.list = querySnapshot.data()
+      listService.getList(this.listId, (list) => {
+        this.list = list
       })
-
-      this.itemsQuery.onSnapshot((snap) => {
-        this.items = snap.docs.map(d => {
-          var temp = {...d.data()}
-          temp.id = d.id
-          return temp
-        })
+      listService.getItems(this.listId, (items) => {
+        this.items = items
       })
     },
     fetchCompletedItems () {
-      this.completedItemsQuery.onSnapshot((snap) => {
-        this.completedItems = snap.docs.map(d => {
-          var temp = {...d.data()}
-          temp.id = d.id
-          return temp
-        })
+      listService.getCompletedItems(this.listId, (completedItems) => {
+        this.completedItems = completedItems
       })
     },
     addItem () {
       if (this.newItem) {
-        this.listItemsCollection.add({
+        listService.addItemToList(this.listId, {
           text: this.newItem,
           completedDate: null,
-          createdDate: firebase.firestore.FieldValue.serverTimestamp(),
           order: this.nextOrder
         })
         this.newItem = ''
@@ -168,9 +153,7 @@ export default {
       }
     },
     updateItem (item) {
-      this.listItemsCollection.doc(item.id).update({
-        text: item.text
-      })
+      listService.updateItem(this.listId, item.id, item.text)
     },
     openRenameListDialog () {
       this.prompt.newListName = this.list.name
@@ -181,9 +164,7 @@ export default {
     },
     onCloseRenameDialog (actionClicked) {
       if (actionClicked === 'ok') {
-        this.listDoc.update({
-          name: this.prompt.newListName
-        })
+        listService.renameList(this.listId, this.prompt.newListName)
       }
     },
     openDeleteListDialog () {
@@ -191,17 +172,13 @@ export default {
     },
     onCloseDeleteDialog (actionClicked) {
       if (actionClicked === 'ok') {
-        this.listItemsCollection.get().then((snapshot) => snapshot.docs.forEach((doc) => doc.delete()))
-        this.listDoc.delete()
+        listService.deleteList(this.listId)
         this.$refs.snackbar.open()
         router.push('/Lists')
       }
     },
     markItem (item, completed) {
-      var completedDate = completed ? firebase.firestore.FieldValue.serverTimestamp() : null
-      this.listItemsCollection.doc(item.id).update({
-        completedDate: completedDate
-      })
+      listService.markItem(this.listId, item.id, completed)
     },
     toggleCompleted () {
       this.showCompleted = !this.showCompleted

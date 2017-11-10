@@ -23,18 +23,14 @@
 </template>
 
 <script>
-import fire from '../data/fire'
 import router from '@/router/index'
+import listService from '@/data/listService'
 
 export default {
   name: 'ListsIndex',
   data () {
-    fire.firestore().collection('lists').orderBy('order').onSnapshot((querySnapshot) => {
-      this.lists = querySnapshot.docs.map(d => {
-        var thing = {...d.data()}
-        thing.id = d.id
-        return thing
-      })
+    listService.watchCurrentUserLists((lists) => {
+      this.lists = lists
     })
 
     return {
@@ -60,11 +56,8 @@ export default {
     },
     onCloseAddDialog (actionClicked) {
       if (actionClicked === 'ok') {
-        fire.firestore().collection('lists').add({
-          name: this.prompt.value,
-          order: this.nextOrder
-        }).then((docRef) => {
-          router.push('/Lists/' + docRef.id)
+        listService.newList(this.prompt.value, this.nextOrder).then((list) => {
+          router.push('/Lists/' + list.id)
         })
       }
     }

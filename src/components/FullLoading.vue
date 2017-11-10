@@ -1,7 +1,7 @@
 <template>
   <md-layout md-column md-align="center" style="height: 100%">
     <md-layout md-row md-align="center" md-vertical-align="center">
-      <md-spinner :md-size="150" :md-indeterminate="true"></md-spinner>
+      <md-spinner :md-size="100" :md-indeterminate="true"></md-spinner>
     </md-layout>
   </md-layout>
 </template>
