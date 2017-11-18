@@ -46,6 +46,14 @@
               <md-table-card>
                 <md-table>
                   <md-table-body>
+                    <!-- <md-table-row>
+                      <md-table-cell class="checkbox-cell">
+                        <md-checkbox disabled></md-checkbox>
+                      </md-table-cell>
+                      <md-table-cell class="input-cell">
+                        <input placeholder="New item..." class="item-input" type="text" v-model="newItem" @keypress.enter="addItem" @blur="addItem" ref="newItemInput"/>
+                      </md-table-cell>
+                    </md-table-row> -->
                     <md-table-row v-for="item in items" :key="item.id">
                       <md-table-cell class="checkbox-cell">
                         <md-checkbox v-model="item.completedDate" @change="markItem(item, true)"></md-checkbox>
@@ -149,7 +157,7 @@ export default {
 
         setTimeout(() => {
           this.$refs.scrollView.scrollTo(0, this.$refs.scrollView.scrollHeight)
-        }, 0)
+        }, 300)
       }
     },
     updateItem (item) {
@@ -178,7 +186,9 @@ export default {
       }
     },
     markItem (item, completed) {
-      listService.markItem(this.listId, item.id, completed)
+      setTimeout(() => {
+        listService.markItem(this.listId, item.id, completed)
+      }, 500)
     },
     toggleCompleted () {
       this.showCompleted = !this.showCompleted

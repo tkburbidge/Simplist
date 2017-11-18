@@ -3,7 +3,7 @@ import firebase from 'firebase'
 
 export default {
 
-  watchCurrentUserLists (callback) {
+  getCurrentUserLists (callback) {
     fire.firestore().collection('lists').orderBy('order').onSnapshot((querySnapshot) => {
       var lists = querySnapshot.docs.map(d => {
         var thing = {...d.data()}
@@ -16,9 +16,11 @@ export default {
   },
 
   newList (name, order) {
+    var owners = {}
     return fire.firestore().collection('lists').add({
       name: name,
-      order: order
+      order: order,
+      owners: owners
     })
   },
 
@@ -35,7 +37,7 @@ export default {
   },
 
   getItems (listId, callback) {
-    return fire.firestore().collection('lists').doc(listId).collection('items').where('completedDate', '==', null).orderBy('order').onSnapshot((snap) => {
+    return fire.firestore().collection('lists').doc(listId).collection('items').where('completedDate', '==', null).orderBy('order', 'asc').onSnapshot((snap) => {
       callback(snap.docs.map(d => {
         var temp = {...d.data()}
         temp.id = d.id
@@ -66,8 +68,10 @@ export default {
   },
 
   deleteList (listId) {
-    fire.firestore().collection('lists').doc(listId).collection('items').get().then((snapshot) => snapshot.docs.forEach((doc) => doc.delete()))
-    fire.firestore().collection('lists').doc(listId).delete()
+    return deleteCollection(fire.firestore(), fire.firestore().collection('lists').doc(listId).collection('items'), 10)
+      .then(() => {
+        fire.firestore().collection('lists').doc(listId).delete()
+      })
   },
 
   markItem (listId, itemId, completed) {
@@ -76,4 +80,48 @@ export default {
       completedDate: completedDate
     })
   }
+}
+
+/**
+ * Delete a collection, in batches of batchSize. Note that this does
+ * not recursively delete subcollections of documents in the collection
+ */
+function deleteCollection (db, collectionRef, batchSize) {
+  var query = collectionRef.orderBy('__name__').limit(batchSize)
+
+  return new Promise(function (resolve, reject) {
+    deleteQueryBatch(db, query, batchSize, resolve, reject)
+  })
+}
+
+function deleteQueryBatch (db, query, batchSize, resolve, reject) {
+  query.get()
+      .then((snapshot) => {
+          // When there are no documents left, we are done
+        if (snapshot.size === 0) {
+          return 0
+        }
+
+        // Delete documents in a batch
+        var batch = db.batch()
+        snapshot.docs.forEach(function (doc) {
+          batch.delete(doc.ref)
+        })
+
+        return batch.commit().then(function () {
+          return snapshot.size
+        })
+      }).then(function (numDeleted) {
+        if (numDeleted <= batchSize) {
+          resolve()
+          return
+        }
+
+        // Recurse on the next process tick, to avoid
+        // exploding the stack.
+        process.nextTick(function () {
+          deleteQueryBatch(db, query, batchSize, resolve, reject)
+        })
+      })
+      .catch(reject)
 }

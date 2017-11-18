@@ -6,6 +6,13 @@
         { "fieldPath": "completedDate", "mode": "ASCENDING" },
         { "fieldPath": "order", "mode": "ASCENDING" }
       ]
+    },
+    {
+      "collectionId": "items",
+      "fields": [
+        { "fieldPath": "completedDate", "mode": "ASCENDING" },
+        { "fieldPath": "order", "mode": "DESCENDING" }
+      ]
     }
   ] 
 }

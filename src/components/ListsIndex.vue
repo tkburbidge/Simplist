@@ -29,7 +29,7 @@ import listService from '@/data/listService'
 export default {
   name: 'ListsIndex',
   data () {
-    listService.watchCurrentUserLists((lists) => {
+    listService.getCurrentUserLists((lists) => {
       this.lists = lists
     })
 
